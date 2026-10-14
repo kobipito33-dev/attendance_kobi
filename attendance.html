@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>נוכחות</title>
+<style>
+:root{--bg:#f6f7f9;--fg:#1c1e21;--card:#fff;--mut:#6b7280;--bd:#e5e7eb;--pri:#2563eb;--warn:#fef3c7;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161a;--fg:#e8eaed;--card:#1e2126;--mut:#9aa0a6;--bd:#2d3239;--pri:#6b9bff;--warn:#4a3d12}}
+:root[data-theme="dark"]{--bg:#14161a;--fg:#e8eaed;--card:#1e2126;--mut:#9aa0a6;--bd:#2d3239;--pri:#6b9bff;--warn:#4a3d12}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;max-width:560px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:12px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h2{margin:0;font-size:18px}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--fg);border-radius:10px;padding:8px 12px;cursor:pointer}
+button.p{background:var(--pri);color:#fff;border-color:var(--pri)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.hd{text-align:center;color:var(--mut);font-size:12px}
+.c{min-height:54px;border:1px solid var(--bd);border-radius:8px;padding:3px;font-size:11px;cursor:pointer;color:#111;background:var(--card)}
+.c b{display:block;font-size:13px;color:var(--fg)}
+.c.t{outline:2px solid var(--pri)}.c.e{visibility:hidden}
+.c[style] b{color:#111}
+.bn{background:var(--warn);border-radius:10px;padding:10px;margin-bottom:12px;font-size:14px}
+.row{display:flex;justify-content:space-between;padding:3px 0;font-size:14px}
+.ov{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;justify-content:center;z-index:9}
+.sh{background:var(--card);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px))}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.opts button{color:#111;border:0;padding:12px}
+textarea{width:100%;height:90px;font:12px monospace;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:8px;direction:ltr}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+small{color:var(--mut)}
+</style></head><body>
+<div id="bn"></div>
+<div class="card">
+ <div class="bar"><button id="nx">‹</button><h2 id="ti"></h2><button id="pv">›</button></div>
+ <div class="grid" id="gr"></div>
+</div>
+<div class="card"><h2>סיכום חודשי</h2><div id="sm"></div>
+ <div class="btns"><button class="p" id="cp">העתק פירוט ל-Workday</button><button id="cx">נקה את החודש</button></div></div>
+<div class="card"><h2>מחזור משמרות</h2>
+ <small>איזה סוג משמרת השבוע הנוכחי? המערכת תחשב את השאר לסירוגין (ראשון–חמישי).</small>
+ <div class="btns"><button id="wm">השבוע בוקר</button><button id="we">השבוע ערב</button><button class="p" id="fl">מלא ימים ריקים</button><button id="fo">מלא מחדש (מחליף בוקר/ערב)</button></div><div id="st" style="margin-top:6px"></div>
+ <small>שישי, לילה וחריגים מסמנים ידנית. מילוי לא דורס ימים שכבר סומנו.</small></div>
+<div class="card"><h2>גיבוי ושחזור</h2>
+ <small>הנתונים נשמרים במכשיר. גבה אחת לחודש: העתק והדבק בהערות או במייל לעצמך.</small>
+ <textarea id="tx" placeholder="כאן יופיע הגיבוי / הדבק כאן לשחזור"></textarea>
+ <div class="btns"><button class="p" id="bk">צור והעתק גיבוי</button><button id="rs">שחזר מהטקסט</button><button id="nt">הפעל התראות</button></div>
+ <small id="ms"></small></div>
+<div class="ov" id="ov"><div class="sh"><div class="bar"><h2 id="sd"></h2><button id="cl">סגור</button></div><div class="opts" id="op"></div></div></div>
+<script>
+const T={m:['בוקר','#fde68a'],e:['ערב','#fdba74'],n:['לילה','#a5b4fc'],f:['שישי','#99f6e4'],v:['חופש','#86efac'],a:['מחלה אישית','#fca5a5'],c:['מחלת ילד','#fecdd3'],p:['מחלת הורה','#e9d5ff'],z:['מחלת בן/בת זוג','#bae6fd']};
+const MN=['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const K='attendance_v1';let S={days:{},anchor:null,lastBackup:0},memOnly=false;
+try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){memOnly=true}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){memOnly=true}render()}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+const $=i=>document.getElementById(i),pad=n=>String(n).padStart(2,'0');
+const ds=(y,m,d)=>y+'-'+pad(m+1)+'-'+pad(d);
+const now=new Date();let cy=now.getFullYear(),cm=now.getMonth(),sel=null;
+function rot(y,m,d){if(!S.anchor)return null;const dt=new Date(y,m,d),sun=new Date(y,m,d-dt.getDay()),a=new Date(S.anchor+'T00:00:00');const w=Math.round((sun-a)/6048e5);return((w%2)+2)%2===0?'m':'e'}
+function setWeek(t){const s=new Date(now.getFullYear(),now.getMonth(),now.getDate()-now.getDay());if(t==='e')s.setDate(s.getDate()-7);S.anchor=ds(s.getFullYear(),s.getMonth(),s.getDate());save()}
+function fill(ow){if(!S.anchor){alert('קודם בחר אם השבוע בוקר או ערב');return}const n=new Date(cy,cm+1,0).getDate();for(let d=1;d<=n;d++){const k=ds(cy,cm,d);if(new Date(cy,cm,d).getDay()<=4&&(!S.days[k]||(ow&&(S.days[k]==='m'||S.days[k]==='e'))))S.days[k]=rot(cy,cm,d)}save()}
+function render(){
+ $('ti').textContent=MN[cm]+' '+cy;
+ {const y=now.getFullYear(),m=now.getMonth(),d=now.getDate(),a=rot(y,m,d),b=rot(y,m,d+7);$('st').innerHTML=a?'<small>לפי ההגדרה: השבוע '+T[a][0]+', שבוע הבא '+T[b][0]+'</small>':'<small>עוד לא הוגדר מחזור</small>'}
+ let h='';'אבגדהוש'.split('').forEach(x=>h+='<div class="hd">'+x+'</div>');
+ const f=new Date(cy,cm,1).getDay(),n=new Date(cy,cm+1,0).getDate();
+ for(let i=0;i<f;i++)h+='<div class="c e"></div>';
+ const tk=ds(now.getFullYear(),now.getMonth(),now.getDate());
+ for(let d=1;d<=n;d++){const k=ds(cy,cm,d),t=S.days[k];
+  h+='<div class="c'+(k===tk?' t':'')+'" data-k="'+k+'"'+(t?' style="background:'+T[t][1]+'"':'')+'><b>'+d+'</b>'+(t?T[t][0]:'')+'</div>'}
+ $('gr').innerHTML=h;
+ document.querySelectorAll('.c[data-k]').forEach(e=>e.onclick=()=>openSheet(e.dataset.k));
+ const cnt={},list=[];
+ for(let d=1;d<=n;d++){const k=ds(cy,cm,d),t=S.days[k];if(t){cnt[t]=(cnt[t]||0)+1;list.push(pad(d)+'/'+pad(cm+1)+' – '+T[t][0])}}
+ let s='';Object.keys(T).forEach(t=>{if(cnt[t])s+='<div class="row"><span>'+T[t][0]+'</span><b>'+cnt[t]+'</b></div>'});
+ $('sm').innerHTML=s||'<small>עוד לא סומן כלום החודש</small>';
+ $('cp').onclick=()=>{const tx=MN[cm]+' '+cy+'\n'+list.join('\n');try{navigator.clipboard.writeText(tx);$('ms').textContent='הפירוט הועתק'}catch(e){$('tx').value=tx}};
+ let b='';
+ if(now.getDate()<=10){const pm=(now.getMonth()+11)%12;b+='<div class="bn">📌 עד ה-10 לחודש צריך לדווח ב-Workday את '+MN[pm]+'. <button id="gp">עבור לחודש</button></div>'}
+ if(now.getHours()>=20&&!S.days[tk])b+='<div class="bn">⏰ עוד לא סימנת את היום.</div>';
+ if(Object.keys(S.days).length&&Date.now()-S.lastBackup>30*864e5)b+='<div class="bn">💾 עבר חודש מהגיבוי האחרון. מומלץ לגבות למטה.</div>';
+ if(memOnly)b+='<div class="bn">⚠️ האחסון לא זמין בדפדפן הזה, הנתונים לא יישמרו. גבה ידנית.</div>';
+ $('bn').innerHTML=b;const g=$('gp');if(g)g.onclick=()=>{cm=(now.getMonth()+11)%12;cy=now.getMonth()===0?cy-1:cy;render()}
+}
+function openSheet(k){sel=k;const[y,m,d]=k.split('-');$('sd').textContent=d+'/'+m+'/'+y;
+ let h='';Object.keys(T).forEach(t=>h+='<button data-t="'+t+'" style="background:'+T[t][1]+'">'+T[t][0]+'</button>');
+ h+='<button data-t="" style="background:var(--bd);color:var(--fg)">נקה יום</button>';
+ $('op').innerHTML=h;$('ov').style.display='flex';
+ $('op').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(b.dataset.t)S.days[sel]=b.dataset.t;else delete S.days[sel];$('ov').style.display='none';save()})}
+let cxT=null;$('cx').onclick=()=>{const b=$('cx');if(!cxT){b.textContent='לחץ שוב למחיקת '+MN[cm];cxT=setTimeout(()=>{cxT=null;b.textContent='נקה את החודש'},4000);return}clearTimeout(cxT);cxT=null;b.textContent='נקה את החודש';const n=new Date(cy,cm+1,0).getDate();for(let d=1;d<=n;d++)delete S.days[ds(cy,cm,d)];save()};
+$('cl').onclick=()=>$('ov').style.display='none';
+$('pv').onclick=()=>{cm--;if(cm<0){cm=11;cy--}render()};
+$('nx').onclick=()=>{cm++;if(cm>11){cm=0;cy++}render()};
+$('wm').onclick=()=>setWeek('m');$('we').onclick=()=>setWeek('e');$('fl').onclick=()=>fill(false);$('fo').onclick=()=>fill(true);
+$('bk').onclick=()=>{const j=JSON.stringify(S);$('tx').value=j;try{navigator.clipboard.writeText(j);$('ms').textContent='הגיבוי הועתק. הדבק אותו בהערות או במייל.'}catch(e){$('ms').textContent='סמן והעתק את הטקסט ידנית.'}S.lastBackup=Date.now();save()};
+$('rs').onclick=()=>{try{const o=JSON.parse($('tx').value);if(!o.days)throw 0;if(confirm('לשחזר? זה יחליף את הנתונים הקיימים.')){S=Object.assign({days:{},anchor:null,lastBackup:0},o);save()}}catch(e){alert('הטקסט לא תקין')}};
+$('nt').onclick=()=>{try{Notification.requestPermission().then(p=>$('ms').textContent=p==='granted'?'התראות הופעלו (עובד כשהאפליקציה פתוחה)':'ההתראות נחסמו')}catch(e){$('ms').textContent='התראות לא נתמכות כאן'}};
+setInterval(()=>{const t=new Date(),k=ds(t.getFullYear(),t.getMonth(),t.getDate());if(t.getHours()===20&&t.getMinutes()===0&&!S.days[k]){try{new Notification('נוכחות',{body:'לא סימנת את היום'})}catch(e){}}render()},60000);
+render();
+</script></body></html>
